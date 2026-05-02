@@ -14,7 +14,7 @@
   }
   * { margin: 0; padding: 0; box-sizing: border-box; }
   body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
- 
+
   nav {
     background: var(--surface); border-bottom: 1px solid var(--border);
     padding: 0 2rem; display: flex; align-items: center; justify-content: space-between;
@@ -38,7 +38,7 @@
     width: 20px; height: 20px; font-size: 0.7rem; font-weight: 600;
     display: inline-flex; align-items: center; justify-content: center;
   }
- 
+
   .hero {
     background: var(--text); color: #fff;
     padding: 5rem 2rem; text-align: center; position: relative; overflow: hidden;
@@ -62,14 +62,14 @@
   }
   .hero h1 span { color: var(--accent); }
   .hero p { color: #aaa; font-size: 1rem; max-width: 480px; margin: 0 auto; line-height: 1.6; }
- 
+
   .products-section { padding: 3rem 2rem 4rem; max-width: 1200px; margin: 0 auto; }
   .section-header { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 2rem; }
   .section-header h2 { font-family: 'Space Grotesk', sans-serif; font-size: 1.5rem; font-weight: 600; letter-spacing: -0.02em; }
   .section-header p { color: var(--muted); font-size: 0.875rem; }
- 
+
   .product-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 1.5rem; }
- 
+
   /* SKELETON */
   .skeleton-card { background: var(--surface); border-radius: var(--radius); border: 1px solid var(--border); overflow: hidden; }
   .skeleton { background: linear-gradient(90deg, #ececec 25%, #f5f5f5 50%, #ececec 75%); background-size: 200% 100%; animation: shimmer 1.4s infinite; border-radius: 6px; }
@@ -80,7 +80,7 @@
   .sk-line.short { width: 60%; }
   .sk-line.med { width: 80%; }
   .sk-price { height: 20px; width: 50%; margin-top: 14px; }
- 
+
   /* PRODUCT CARD */
   .product-card {
     background: var(--surface); border-radius: var(--radius); border: 1px solid var(--border);
@@ -89,12 +89,13 @@
   }
   .product-card:hover { transform: translateY(-4px); box-shadow: var(--shadow-hover); }
   .product-img-wrap {
-    height: 200px; position: relative; overflow: hidden;
+    position: relative; overflow: hidden;
     background: #f0f0ec; display: flex; align-items: center; justify-content: center;
+    min-height: 180px;
   }
-  .product-img-wrap img { width: 100%; height: 100%; object-fit: contain; transition: transform 0.4s; }
-  .product-card:hover .product-img-wrap img { transform: scale(1.04); }
-  .img-fallback { font-size: 4rem; width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; }
+  .product-img-wrap img { width: 100%; height: auto; display: block; object-fit: contain; transition: transform 0.4s; }
+  .product-card:hover .product-img-wrap img { transform: scale(1.03); }
+  .img-fallback { font-size: 4rem; width: 100%; min-height: 180px; display: flex; align-items: center; justify-content: center; }
   .badge {
     position: absolute; top: 12px; left: 12px; z-index: 2;
     font-size: 0.7rem; font-weight: 600; letter-spacing: 0.04em;
@@ -117,11 +118,38 @@
   .add-btn:hover { background: #333; }
   .add-btn:active { transform: scale(0.97); }
   .add-btn.added { background: #16a34a; }
- 
-  .load-error { text-align: center; padding: 3rem 1rem; color: var(--muted); grid-column: 1/-1; }
+
+  /* SLIDESHOW */
+  .slides { width: 100%; }
+  .slide { display: none; }
+  .slide.active { display: block; }
+  .slide img { width: 100%; height: auto; display: block; object-fit: contain; }
+  .slide-arrow {
+    position: absolute; top: 50%; transform: translateY(-50%);
+    background: rgba(255,255,255,0.88); border: none; border-radius: 50%;
+    width: 32px; height: 32px; font-size: 1.2rem; line-height: 1;
+    cursor: pointer; z-index: 5; display: flex; align-items: center; justify-content: center;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.15); transition: background 0.15s, transform 0.15s;
+    color: var(--text);
+  }
+  .slide-arrow:hover { background: #fff; transform: translateY(-50%) scale(1.08); }
+  .slide-arrow.left { left: 8px; }
+  .slide-arrow.right { right: 8px; }
+  .slide-dots {
+    position: absolute; bottom: 8px; left: 50%; transform: translateX(-50%);
+    display: flex; gap: 5px; z-index: 5;
+  }
+  .dot {
+    width: 7px; height: 7px; border-radius: 50%;
+    background: rgba(255,255,255,0.55); cursor: pointer;
+    transition: background 0.2s, transform 0.2s; border: none;
+  }
+  .dot.active { background: #fff; transform: scale(1.25); }
+
+  
   .load-error strong { display: block; color: var(--text); font-size: 1rem; margin-bottom: 8px; }
   .load-error code { font-size: 0.78rem; background: #f0f0ec; padding: 2px 7px; border-radius: 4px; }
- 
+
   /* CART DRAWER */
   .cart-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.4); z-index: 200; }
   .cart-overlay.open { display: block; }
@@ -173,7 +201,7 @@
     font-size: 0.95rem; font-weight: 600; cursor: pointer; transition: background 0.2s;
   }
   .checkout-btn:hover { background: var(--accent-dark); }
- 
+
   /* MODAL */
   .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 400; align-items: center; justify-content: center; padding: 1rem; }
   .modal-overlay.open { display: flex; }
@@ -205,13 +233,13 @@
     font-size: 0.9rem; font-weight: 600; cursor: pointer; margin-bottom: 10px; transition: background 0.2s;
   }
   .submit-info-btn:hover { background: #333; }
- 
+
   .success-screen { display: none; text-align: center; padding: 2.5rem 2rem; }
   .success-screen.show { display: block; }
   .success-icon { font-size: 3.5rem; margin-bottom: 1rem; }
   .success-screen h3 { font-family: 'Space Grotesk', sans-serif; font-size: 1.3rem; font-weight: 600; margin-bottom: 0.5rem; }
   .success-screen p { color: var(--muted); font-size: 0.9rem; line-height: 1.6; }
- 
+
   .toast {
     position: fixed; bottom: 1.5rem; left: 50%;
     transform: translateX(-50%) translateY(20px);
@@ -221,10 +249,10 @@
     z-index: 500; white-space: nowrap; pointer-events: none;
   }
   .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
- 
+
   footer { background: var(--text); color: #555; text-align: center; padding: 2rem; font-size: 0.8rem; margin-top: 2rem; }
   footer strong { color: #fff; }
- 
+
   @media (max-width: 600px) {
     .form-row { grid-template-columns: 1fr; }
     .cart-drawer { width: 100vw; }
@@ -235,20 +263,20 @@
 </style>
 </head>
 <body>
- 
+
 <nav>
   <div class="logo"><div class="logo-dot"></div>LUX BEAM</div>
   <button class="cart-btn" onclick="openCart()">
     🛒 Cart <span class="cart-count" id="cartCount">0</span>
   </button>
 </nav>
- 
+
 <section class="hero">
   <div class="hero-tag">✦ Premium Illumination</div>
   <h1>Light the Way.<br><span>Built to Last.</span></h1>
   <p>Professional-grade flashlights engineered for performance. From everyday carry to extreme tactical use.</p>
 </section>
- 
+
 <section class="products-section">
   <div class="section-header">
     <h2>Our Products</h2>
@@ -260,7 +288,7 @@
     <div class="skeleton-card"><div class="skeleton sk-img"></div><div class="sk-body"><div class="skeleton sk-line med"></div><div class="skeleton sk-line short"></div><div class="skeleton sk-price"></div></div></div>
   </div>
 </section>
- 
+
 <div class="cart-overlay" id="cartOverlay" onclick="closeCart()"></div>
 <div class="cart-drawer" id="cartDrawer">
   <div class="cart-header">
@@ -273,7 +301,7 @@
     <button class="checkout-btn" onclick="openCheckout()">Proceed to Checkout →</button>
   </div>
 </div>
- 
+
 <div class="modal-overlay" id="modalOverlay">
   <div class="modal">
     <div class="modal-header">
@@ -309,38 +337,38 @@
     </div>
   </div>
 </div>
- 
+
 <div class="toast" id="toast"></div>
- 
+
 <footer>
   <strong>LUX BEAM</strong> — Premium Flashlights &nbsp;|&nbsp; All rights reserved &copy; 2025
 </footer>
- 
+
 <script src="https://www.paypal.com/sdk/js?client-id=YOUR_PAYPAL_CLIENT_ID&currency=USD"></script>
 <script>
 // ════════════════════════════════════════════════════════
 //  ★  CONFIGURATION — EDIT THESE THREE LINES  ★
 // ════════════════════════════════════════════════════════
- 
+
 // Published CSV URL from your Google Sheet "Products" tab
 const PRODUCTS_CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRL8TP9mKNAjfJIm2tH9T84nEhyNXu2bQFt-O9eSbnMdnjS9nCdT6duh2_SOMSgF13KVVO3IwbX38Zr/pub?output=csv';
- 
+
 // Apps Script Web App URL (receives order data)
 const ORDER_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyILfzB3XDsy_e6KHP9CaXtVMgAF6LJAKYfh7U_FSu4UsB1VLf3NBpCw9Mp8obsOQ8N/exec';
- 
+
 // Your PayPal.Me username
 const PAYPALME = 'YOURPAYPALME';
- 
+
 // ════════════════════════════════════════════════════════
- 
+
 let products = [];
 let cart = [];
- 
+
 // ── FETCH PRODUCTS FROM SHEET ──
 async function loadProducts() {
   const grid = document.getElementById('productGrid');
   const countEl = document.getElementById('productCount');
- 
+
   if (!PRODUCTS_CSV_URL || PRODUCTS_CSV_URL === 'YOUR_PUBLISHED_CSV_URL') {
     loadDemoProducts(); return;
   }
@@ -362,7 +390,7 @@ async function loadProducts() {
     countEl.textContent = 'Error loading products';
   }
 }
- 
+
 function parseCSV(csv) {
   const lines = csv.trim().split('\n');
   if (lines.length < 2) return [];
@@ -374,20 +402,26 @@ function parseCSV(csv) {
     const o = {};
     headers.forEach((h, idx) => { o[h] = (cols[idx] || '').trim().replace(/^"|"$/g,''); });
     if (!o.name) continue;
+    // collect all imageUrl, imageUrl2, imageUrl3... columns
+    const images = [];
+    ['imageurl','imageurl2','imageurl3','imageurl4','imageurl5','image','image2','image3'].forEach(k => {
+      if (o[k] && o[k].startsWith('http')) images.push(o[k]);
+    });
     rows.push({
       id: o.id || i,
       name: o.name,
       description: o.description || '',
       price: parseFloat(o.price) || 0,
       oldPrice: o.oldprice ? parseFloat(o.oldprice) : null,
-      imageUrl: o.imageurl || o.image || o['imageurl'] || '',
+      imageUrl: images[0] || '',
+      images,
       badge: o.badge || '',
       badgeType: (o.badgetype || o.badge || 'hot').toLowerCase(),
     });
   }
   return rows;
 }
- 
+
 function splitCSVLine(line) {
   const r = []; let cur = '', inQ = false;
   for (let i = 0; i < line.length; i++) {
@@ -398,17 +432,25 @@ function splitCSVLine(line) {
   }
   r.push(cur); return r;
 }
- 
+
 function renderProducts() {
-  document.getElementById('productGrid').innerHTML = products.map(p => `
+  document.getElementById('productGrid').innerHTML = products.map(p => {
+    const imgs = p.images && p.images.length ? p.images : (p.imageUrl ? [p.imageUrl] : []);
+    const sid = 'slide-' + p.id;
+    return `
     <div class="product-card">
-      <div class="product-img-wrap">
+      <div class="product-img-wrap" id="${sid}">
         ${p.badge ? `<span class="badge badge-${p.badgeType}">${p.badge}</span>` : ''}
-        ${p.imageUrl
-          ? `<img src="${p.imageUrl}" alt="${p.name}"
-               onerror="this.style.display='none';this.parentElement.querySelector('.img-fallback').style.display='flex'">`
-          : ''}
-        <div class="img-fallback" style="${p.imageUrl ? 'display:none' : ''}">🔦</div>
+        ${imgs.length ? `
+          <div class="slides">
+            ${imgs.map((url,i)=>`<div class="slide${i===0?' active':''}"><img src="${url}" alt="${p.name} ${i+1}" onerror="this.parentElement.style.display='none'"></div>`).join('')}
+          </div>
+          ${imgs.length > 1 ? `
+            <button class="slide-arrow left" onclick="slideNav('${sid}',-1,event)">&#8249;</button>
+            <button class="slide-arrow right" onclick="slideNav('${sid}',1,event)">&#8250;</button>
+            <div class="slide-dots">${imgs.map((_,i)=>`<span class="dot${i===0?' active':''}" onclick="slideTo('${sid}',${i},event)"></span>`).join('')}</div>
+          ` : ''}
+        ` : `<div class="img-fallback">🔦</div>`}
       </div>
       <div class="product-info">
         <div class="product-name">${p.name}</div>
@@ -421,26 +463,47 @@ function renderProducts() {
           <button class="add-btn" id="btn-${p.id}" onclick="addToCart('${p.id}')">Add to Cart</button>
         </div>
       </div>
-    </div>`).join('');
+    </div>`;
+  }).join('');
 }
- 
+
+function slideNav(sid, dir, e) {
+  e && e.stopPropagation();
+  const wrap = document.getElementById(sid);
+  const slides = wrap.querySelectorAll('.slide');
+  const dots = wrap.querySelectorAll('.dot');
+  let cur = [...slides].findIndex(s => s.classList.contains('active'));
+  slides[cur].classList.remove('active');
+  dots[cur] && dots[cur].classList.remove('active');
+  cur = (cur + dir + slides.length) % slides.length;
+  slides[cur].classList.add('active');
+  dots[cur] && dots[cur].classList.add('active');
+}
+
+function slideTo(sid, idx, e) {
+  e && e.stopPropagation();
+  const wrap = document.getElementById(sid);
+  wrap.querySelectorAll('.slide').forEach((s,i) => s.classList.toggle('active', i===idx));
+  wrap.querySelectorAll('.dot').forEach((d,i) => d.classList.toggle('active', i===idx));
+}
+
 function loadDemoProducts() {
   products = [
-    {id:1,name:'ProBeam 1000',description:'1000 Lumens · IPX7 Waterproof · USB-C · 5 light modes',price:29.99,oldPrice:39.99,imageUrl:'',badge:'Best Seller',badgeType:'hot'},
-    {id:2,name:'TacForce 2000',description:'2000 Lumens · Military grade · Zoom beam · Strike bezel',price:54.99,oldPrice:69.99,imageUrl:'',badge:'Hot',badgeType:'hot'},
-    {id:3,name:'PocketLite Mini',description:'400 Lumens · EDC Keychain · Magnetic tail · AAA battery',price:14.99,imageUrl:'',badge:'New',badgeType:'new'},
-    {id:4,name:'SearchMaster 5000',description:'5000 Lumens · 1 km throw · Li-ion · Dual switch',price:89.99,oldPrice:109.99,imageUrl:'',badge:'',badgeType:''},
-    {id:5,name:'HeadLamp Pro',description:'600 Lumens · Hands-free · Red night mode · USB-C',price:34.99,imageUrl:'',badge:'New',badgeType:'new'},
-    {id:6,name:'UltraLite 3-Pack',description:'200 Lumens each · AA battery · Pocket clip · Great gift set',price:24.99,oldPrice:34.99,imageUrl:'',badge:'Bundle',badgeType:'hot'},
+    {id:1,name:'ProBeam 1000',description:'1000 Lumens · IPX7 Waterproof · USB-C · 5 light modes',price:29.99,oldPrice:39.99,images:[],imageUrl:'',badge:'Best Seller',badgeType:'hot'},
+    {id:2,name:'TacForce 2000',description:'2000 Lumens · Military grade · Zoom beam · Strike bezel',price:54.99,oldPrice:69.99,images:[],imageUrl:'',badge:'Hot',badgeType:'hot'},
+    {id:3,name:'PocketLite Mini',description:'400 Lumens · EDC Keychain · Magnetic tail · AAA battery',price:14.99,images:[],imageUrl:'',badge:'New',badgeType:'new'},
+    {id:4,name:'SearchMaster 5000',description:'5000 Lumens · 1 km throw · Li-ion · Dual switch',price:89.99,oldPrice:109.99,images:[],imageUrl:'',badge:'',badgeType:''},
+    {id:5,name:'HeadLamp Pro',description:'600 Lumens · Hands-free · Red night mode · USB-C',price:34.99,images:[],imageUrl:'',badge:'New',badgeType:'new'},
+    {id:6,name:'UltraLite 3-Pack',description:'200 Lumens each · AA battery · Pocket clip · Great gift set',price:24.99,oldPrice:34.99,images:[],imageUrl:'',badge:'Bundle',badgeType:'hot'},
   ];
   renderProducts();
   document.getElementById('productCount').textContent = products.length + ' demo products · Add your Sheet CSV URL to go live';
 }
- 
+
 // ── CART ──
 const getTotal = () => cart.reduce((s,i)=>s+i.price*i.qty,0);
 const getCount = () => cart.reduce((s,i)=>s+i.qty,0);
- 
+
 function addToCart(id) {
   const p = products.find(x=>String(x.id)===String(id));
   if (!p) return;
@@ -451,7 +514,7 @@ function addToCart(id) {
   if (btn) { btn.textContent='✓ Added'; btn.classList.add('added'); setTimeout(()=>{btn.textContent='Add to Cart';btn.classList.remove('added');},1400); }
   showToast(p.name + ' added to cart');
 }
- 
+
 function updateCart() {
   document.getElementById('cartCount').textContent = getCount();
   document.getElementById('cartTotal').textContent = '$' + getTotal().toFixed(2);
@@ -475,7 +538,7 @@ function updateCart() {
       </div>
     </div>`).join('');
 }
- 
+
 function changeQty(id,delta) {
   const item = cart.find(i=>String(i.id)===String(id));
   if (!item) return;
@@ -483,10 +546,10 @@ function changeQty(id,delta) {
   if (item.qty<=0) cart = cart.filter(i=>String(i.id)!==String(id));
   updateCart();
 }
- 
+
 function openCart() { document.getElementById('cartDrawer').classList.add('open'); document.getElementById('cartOverlay').classList.add('open'); }
 function closeCart() { document.getElementById('cartDrawer').classList.remove('open'); document.getElementById('cartOverlay').classList.remove('open'); }
- 
+
 // ── CHECKOUT ──
 function openCheckout() {
   if (!cart.length) { showToast('Your cart is empty!'); return; }
@@ -506,14 +569,14 @@ function closeModal() {
   document.getElementById('successScreen').classList.remove('show');
   document.getElementById('orderForm').style.display='block';
 }
- 
+
 // ── SHEETS ORDER SUBMISSION ──
 async function submitToSheets(data) {
   if (!ORDER_SCRIPT_URL || ORDER_SCRIPT_URL==='YOUR_APPS_SCRIPT_URL') return;
   try { await fetch(ORDER_SCRIPT_URL,{method:'POST',mode:'no-cors',headers:{'Content-Type':'application/json'},body:JSON.stringify(data)}); }
   catch(e){ console.error(e); }
 }
- 
+
 function collectOrder(status='Pending') {
   const total = getTotal(), ship = total>=50?0:4.99;
   return {
@@ -534,7 +597,7 @@ function collectOrder(status='Pending') {
     paypalOrderId: '',
   };
 }
- 
+
 function validateForm() {
   for (const id of ['firstName','lastName','email','address','city','stateZip']) {
     if (!document.getElementById(id).value.trim()) {
@@ -544,7 +607,7 @@ function validateForm() {
   }
   return true;
 }
- 
+
 async function submitOrder() {
   if (!validateForm()) return;
   const data = collectOrder('Awaiting PayPal');
@@ -554,7 +617,7 @@ async function submitOrder() {
   window.open(`https://www.paypal.com/paypalme/${PAYPALME}/${total.toFixed(2)}USD`,'_blank');
   showSuccess();
 }
- 
+
 // ── PAYPAL ──
 function initPayPal() {
   const container = document.getElementById('paypal-button-container');
@@ -577,36 +640,36 @@ function initPayPal() {
     onError: e=>{ showToast('PayPal error — please try again.'); console.error(e); }
   }).render('#paypal-button-container');
 }
- 
+
 function showSuccess() {
   document.getElementById('orderForm').style.display='none';
   document.getElementById('successScreen').classList.add('show');
   cart=[]; updateCart();
 }
- 
+
 function showToast(msg) {
   const t=document.getElementById('toast');
   t.textContent=msg; t.classList.add('show');
   setTimeout(()=>t.classList.remove('show'),2600);
 }
- 
+
 loadProducts();
 </script>
- 
+
 <!--
 ═══════════════════════════════════════════════════════════════════
   SETUP GUIDE
 ═══════════════════════════════════════════════════════════════════
- 
+
 ╔─────────────────────────────────────────────────────────────────╗
 │  STEP 1 — SET UP YOUR PRODUCT CATALOG SHEET                     │
 ╚─────────────────────────────────────────────────────────────────╝
- 
+
 Create a Google Sheet with a tab named "Products".
 Row 1 must have these EXACT headers (lowercase is fine):
- 
+
   id | name | description | price | oldPrice | imageUrl | badge | badgeType
- 
+
 Column notes:
   id          → Unique number: 1, 2, 3…
   name        → ProBeam 1000
@@ -618,27 +681,27 @@ Column notes:
                 Imgur, Dropbox, any direct image URL also works
   badge       → Best Seller | New | Sale | Bundle   (leave blank for none)
   badgeType   → hot (amber) | new (green) | sale (red)
- 
+
 Then publish as CSV:
   File → Share → Publish to web
   → Select your "Products" sheet
   → Change format from "Web page" to "Comma-separated values (.csv)"
   → Publish → Copy the URL
   → Paste it as PRODUCTS_CSV_URL in the script above
- 
- 
+
+
 ╔─────────────────────────────────────────────────────────────────╗
 │  STEP 2 — SET UP ORDER LOGGING SHEET                            │
 ╚─────────────────────────────────────────────────────────────────╝
- 
+
 Add a second tab named "Orders" to the same Google Sheet.
 Row 1 headers:
   Timestamp | First Name | Last Name | Email | Phone |
   Address | City | State/ZIP | Notes | Items |
   Subtotal | Shipping | Total | Payment Status | PayPal Order ID
- 
+
 Then go to Extensions → Apps Script and paste:
- 
+
 ──────────────────────────────────────────────────────────
 function doPost(e) {
   var ss = SpreadsheetApp.getActiveSpreadsheet();
@@ -654,24 +717,23 @@ function doPost(e) {
     .setMimeType(ContentService.MimeType.JSON);
 }
 ──────────────────────────────────────────────────────────
- 
+
 Deploy → New Deployment
   Type: Web App | Execute as: Me | Who has access: Anyone
   Click Deploy → Copy the Web App URL
   Paste it as ORDER_SCRIPT_URL above.
- 
- 
+
+
 ╔─────────────────────────────────────────────────────────────────╗
 │  STEP 3 — PAYPAL                                                │
 ╚─────────────────────────────────────────────────────────────────╝
- 
+
   1. developer.paypal.com → Apps & Credentials → Create App
   2. Copy Client ID → replace YOUR_PAYPAL_CLIENT_ID in the
      <script src> tag at the bottom of the HTML
   3. Replace YOURPAYPALME with your PayPal.Me username
- 
+
 ═══════════════════════════════════════════════════════════════════
 -->
 </body>
 </html>
- 
