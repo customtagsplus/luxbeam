@@ -646,14 +646,43 @@ function closeModal() {
 }
 
 // ── SHEETS ORDER SUBMISSION ──
-async function submitToSheets(data) {
-  if (!ORDER_SCRIPT_URL || ORDER_SCRIPT_URL==='YOUR_APPS_SCRIPT_URL') return;
-  try { await fetch(ORDER_SCRIPT_URL,{method:'POST',mode:'no-cors',headers:{'Content-Type':'application/json'},body:JSON.stringify(data)}); }
-  catch(e){ console.error(e); }
+async function submitToSheets(data, retries = 3) {
+  if (!ORDER_SCRIPT_URL || ORDER_SCRIPT_URL === 'YOUR_APPS_SCRIPT_URL') {
+    console.warn('⚠️ ORDER_SCRIPT_URL not configured.');
+    return false;
+  }
+  for (let attempt = 1; attempt <= retries; attempt++) {
+    try {
+      // Use no-cors (Apps Script requires it), but we retry on network errors
+      await fetch(ORDER_SCRIPT_URL, {
+        method: 'POST',
+        mode: 'no-cors',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+      });
+      console.log(`✅ Order ${data.orderId} sent to Sheets (attempt ${attempt})`);
+      return true;
+    } catch (e) {
+      console.error(`❌ Sheets attempt ${attempt} failed:`, e);
+      if (attempt < retries) await new Promise(r => setTimeout(r, 800 * attempt));
+    }
+  }
+  // All retries failed — store locally as fallback
+  try {
+    const saved = JSON.parse(sessionStorage.getItem('failedOrders') || '[]');
+    saved.push(data);
+    sessionStorage.setItem('failedOrders', JSON.stringify(saved));
+    console.warn('💾 Order saved to sessionStorage as fallback.');
+  } catch(e) {}
+  return false;
 }
 
-function collectOrder(status='Pending') {
-  const total = getTotal(), ship = total>=50?0:4.99;
+// Snapshot the order at checkout open (before PayPal renders)
+// so form data is captured even if user doesn't fill it after PayPal
+let _pendingOrder = null;
+
+function collectOrder(status = 'Pending') {
+  const total = getTotal(), ship = total >= 50 ? 0 : 4.99;
   const orderId = 'ORD-' + Date.now();
   return {
     orderId,
@@ -666,17 +695,16 @@ function collectOrder(status='Pending') {
     city:      document.getElementById('city').value,
     stateZip:  document.getElementById('stateZip').value,
     notes:     document.getElementById('notes').value,
-    items:     cart.map(i=>`${i.name} x${i.qty} @ $${i.price}`).join('; '),
-    lineItems: cart.map(i=>({
-      name: i.name,
-      qty: i.qty,
+    items:     cart.map(i => `${i.name} x${i.qty} @ $${i.price}`).join('; '),
+    lineItems: cart.map(i => ({
+      name: i.name, qty: i.qty,
       unitPrice: i.price.toFixed(2),
       lineTotal: (i.price * i.qty).toFixed(2),
     })),
-    itemCount: cart.reduce((s,i)=>s+i.qty,0),
+    itemCount: cart.reduce((s, i) => s + i.qty, 0),
     subtotal:  total.toFixed(2),
     shipping:  ship.toFixed(2),
-    total:     (total+ship).toFixed(2),
+    total:     (total + ship).toFixed(2),
     paymentStatus: status,
     paypalOrderId: '',
   };
@@ -733,23 +761,67 @@ async function submitOrder() {
 // ── PAYPAL SDK BUTTONS ──
 function initPayPal() {
   const container = document.getElementById('paypal-button-container');
-  container.innerHTML='';
-  if (typeof paypal==='undefined') {
-    container.innerHTML='<p style="font-size:0.8rem;color:var(--muted);text-align:center">Set your PayPal Client ID to enable this button.</p>';
+  container.innerHTML = '';
+  if (typeof paypal === 'undefined') {
+    container.innerHTML = '<p style="font-size:0.8rem;color:var(--muted);text-align:center">Set your PayPal Client ID to enable this button.</p>';
     return;
   }
   const total = getTotal();
-  const grand = (total+(total>=50?0:4.99)).toFixed(2);
+  const grand = (total + (total >= 50 ? 0 : 4.99)).toFixed(2);
+
   paypal.Buttons({
-    createOrder: (_,a)=>a.order.create({purchase_units:[{amount:{value:grand},description:cart.map(i=>`${i.name} x${i.qty}`).join(', ')}]}),
-    onApprove: async(_,a)=>{
-      const d=await a.order.capture();
-      const data=collectOrder('Paid via PayPal');
-      data.paypalOrderId=d.id;
-      await submitToSheets(data);
-      showSuccess();
+    style: { layout: 'vertical', color: 'blue', shape: 'rect', label: 'pay' },
+
+    // Validate form BEFORE PayPal popup opens
+    onClick: function(data, actions) {
+      if (!validateForm()) return actions.reject();
+      // Snapshot order now while form is filled
+      _pendingOrder = collectOrder('Paid via PayPal');
+      return actions.resolve();
     },
-    onError: e=>{ showToast('PayPal error — please try again.'); console.error(e); }
+
+    createOrder: function(data, actions) {
+      return actions.order.create({
+        purchase_units: [{
+          amount: { value: grand },
+          description: cart.map(i => `${i.name} x${i.qty}`).join(', '),
+        }]
+      });
+    },
+
+    onApprove: async function(data, actions) {
+      showToast('Processing payment…');
+      try {
+        const details = await actions.order.capture();
+        // Use the pre-snapshotted order so form data is guaranteed
+        const order = _pendingOrder || collectOrder('Paid via PayPal');
+        order.paymentStatus = 'Paid via PayPal';
+        order.paypalOrderId = details.id;
+        order.payerEmail = details.payer?.email_address || '';
+        order.payerName = (details.payer?.name?.given_name || '') + ' ' + (details.payer?.name?.surname || '');
+
+        const sent = await submitToSheets(order);
+        if (!sent) {
+          showToast('⚠️ Payment received — sheet sync failed. Check console.');
+        }
+        _pendingOrder = null;
+        showSuccess();
+      } catch(err) {
+        console.error('PayPal capture error:', err);
+        showToast('Payment error — please contact us with your PayPal receipt.');
+      }
+    },
+
+    onCancel: function() {
+      _pendingOrder = null;
+      showToast('Payment cancelled.');
+    },
+
+    onError: function(err) {
+      console.error('PayPal SDK error:', err);
+      showToast('PayPal error — please try again or use Cash App.');
+    }
+
   }).render('#paypal-button-container');
 }
 
@@ -837,9 +909,10 @@ function doPost(e) {
     orders.appendRow([
       'Order ID','Timestamp','First Name','Last Name','Email','Phone',
       'Address','City','State/ZIP','Notes','Items Summary','Item Count',
-      'Subtotal','Shipping','Total','Payment Status','PayPal Order ID'
+      'Subtotal','Shipping','Total','Payment Status','PayPal Order ID',
+      'PayPal Email','PayPal Name'
     ]);
-    orders.getRange(1,1,1,17).setFontWeight('bold').setBackground('#0a0a0a').setFontColor('#ffffff');
+    orders.getRange(1,1,1,19).setFontWeight('bold').setBackground('#0a0a0a').setFontColor('#ffffff');
     orders.setFrozenRows(1);
   }
 
@@ -849,7 +922,8 @@ function doPost(e) {
     d.address, d.city, d.stateZip, d.notes,
     d.items, d.itemCount,
     d.subtotal, d.shipping, d.total,
-    d.paymentStatus, d.paypalOrderId || ''
+    d.paymentStatus, d.paypalOrderId || '',
+    d.payerEmail || '', d.payerName || ''
   ]);
 
   // Color-code payment status
