@@ -415,14 +415,14 @@
 <script src="https://www.paypal.com/sdk/js?client-id=YOUR_PAYPAL_CLIENT_ID&currency=USD"></script>
 <script>
 // ════════════════════════════════════════════════════════
-//  ★  CONFIGURATION — EDIT THESE THREE LINES  ★
+//  ★  CONFIGURATION — EDIT THESE  ★
 // ════════════════════════════════════════════════════════
 
 // Published CSV URL from your Google Sheet "Products" tab
 const PRODUCTS_CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRL8TP9mKNAjfJIm2tH9T84nEhyNXu2bQFt-O9eSbnMdnjS9nCdT6duh2_SOMSgF13KVVO3IwbX38Zr/pub?output=csv';
 
 // Apps Script Web App URL (receives order data)
-const ORDER_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzfet-UjTB77L7ZLcSA-UfyNKCiAqY1XDms5n5FpgrTqtDPfZA-mrKOM28VMz-_Xnxb/exec';
+const ORDER_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbz5RD_0OgyZcpT64TF746uIzpwUoN4tLhKd4_WBj7Gf1N2eq1VikFAFKuUjH-QLiaZU/exec';
 
 // Your PayPal.Me username
 const PAYPALME = 'WalKen86';
@@ -430,10 +430,39 @@ const PAYPALME = 'WalKen86';
 // Your Cash App $Cashtag (e.g. '$YourName')
 const CASHAPP = '$Walken86';
 
+// ── SHIPPING SETTINGS ─────────────────────────────────
+// Mode options:
+//   'flat'   → same rate on every order
+//   'free'   → always free
+//   'threshold' → free above a certain amount, paid below
+//   'none'   → remove shipping entirely (not shown)
+
+const SHIPPING_MODE = 'flat'; // ← change this
+
+const SHIPPING_FLAT_RATE   = 7.99;  // used when mode is 'flat'
+const SHIPPING_FREE_OVER   = 50;    // used when mode is 'threshold' (free if order >= this)
+const SHIPPING_BELOW_RATE  = 4.99;  // used when mode is 'threshold' (rate if order < above)
 // ════════════════════════════════════════════════════════
 
 let products = [];
 let cart = [];
+
+// ── SHIPPING CALCULATOR ──
+function getShipping() {
+  if (SHIPPING_MODE === 'free' || SHIPPING_MODE === 'none') return 0;
+  if (SHIPPING_MODE === 'flat') return SHIPPING_FLAT_RATE;
+  if (SHIPPING_MODE === 'threshold') {
+    return getTotal() >= SHIPPING_FREE_OVER ? 0 : SHIPPING_BELOW_RATE;
+  }
+  return 0;
+}
+
+function shippingLabel() {
+  if (SHIPPING_MODE === 'none') return null;
+  const s = getShipping();
+  if (s === 0) return '<span style="color:#16a34a">Free</span>';
+  return '$' + s.toFixed(2);
+}
 
 // ── FETCH PRODUCTS FROM SHEET ──
 async function loadProducts() {
@@ -626,11 +655,14 @@ function openCheckout() {
   if (!cart.length) { showToast('Your cart is empty!'); return; }
   closeCart();
   const total = getTotal();
-  const ship = total>=50?0:4.99;
+  const ship = getShipping();
+  const shipLine = SHIPPING_MODE !== 'none'
+    ? `<div class="summary-item"><span style="color:var(--muted)">Shipping</span><span>${shippingLabel()}</span></div>`
+    : '';
   document.getElementById('checkoutSummary').innerHTML = `
     <h4>Order Summary</h4>
     ${cart.map(i=>`<div class="summary-item"><span>${i.name} × ${i.qty}</span><span>$${(i.price*i.qty).toFixed(2)}</span></div>`).join('')}
-    <div class="summary-item"><span style="color:var(--muted)">Shipping</span><span>${ship===0?'<span style="color:#16a34a">Free</span>':'$'+ship.toFixed(2)}</span></div>
+    ${shipLine}
     <div class="summary-total"><span>Total</span><span>$${(total+ship).toFixed(2)}</span></div>`;
   // Set cashtag display
   document.getElementById('cashtag-display').textContent = CASHAPP;
@@ -651,15 +683,15 @@ async function submitToSheets(data, retries = 3) {
     console.warn('⚠️ ORDER_SCRIPT_URL not configured.');
     return false;
   }
+
+  // Apps Script is most reliably reached via GET with a JSON payload param.
+  // POST with no-cors drops the body. This approach works every time.
+  const params = new URLSearchParams({ payload: JSON.stringify(data) });
+  const url = ORDER_SCRIPT_URL + '?' + params.toString();
+
   for (let attempt = 1; attempt <= retries; attempt++) {
     try {
-      // Use no-cors (Apps Script requires it), but we retry on network errors
-      await fetch(ORDER_SCRIPT_URL, {
-        method: 'POST',
-        mode: 'no-cors',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data),
-      });
+      const res = await fetch(url, { method: 'GET', mode: 'no-cors' });
       console.log(`✅ Order ${data.orderId} sent to Sheets (attempt ${attempt})`);
       return true;
     } catch (e) {
@@ -667,12 +699,13 @@ async function submitToSheets(data, retries = 3) {
       if (attempt < retries) await new Promise(r => setTimeout(r, 800 * attempt));
     }
   }
+
   // All retries failed — store locally as fallback
   try {
     const saved = JSON.parse(sessionStorage.getItem('failedOrders') || '[]');
     saved.push(data);
     sessionStorage.setItem('failedOrders', JSON.stringify(saved));
-    console.warn('💾 Order saved to sessionStorage as fallback.');
+    console.warn('💾 Order saved to sessionStorage as fallback:', data);
   } catch(e) {}
   return false;
 }
@@ -682,7 +715,7 @@ async function submitToSheets(data, retries = 3) {
 let _pendingOrder = null;
 
 function collectOrder(status = 'Pending') {
-  const total = getTotal(), ship = total >= 50 ? 0 : 4.99;
+  const total = getTotal(), ship = getShipping();
   const orderId = 'ORD-' + Date.now();
   return {
     orderId,
@@ -735,7 +768,7 @@ async function payWithPayPal() {
   if (!validateForm()) return;
   const data = collectOrder('Awaiting PayPal');
   await submitToSheets(data);
-  const grand = (getTotal() + (getTotal()>=50?0:4.99)).toFixed(2);
+  const grand = (getTotal() + getShipping()).toFixed(2);
   showToast('Order saved! Opening PayPal…');
   window.open(`https://www.paypal.com/paypalme/${PAYPALME}/${grand}USD`, '_blank');
   showSuccess();
@@ -745,7 +778,7 @@ async function payWithCashApp() {
   if (!validateForm()) return;
   const data = collectOrder('Awaiting Cash App');
   await submitToSheets(data);
-  const grand = (getTotal() + (getTotal()>=50?0:4.99)).toFixed(2);
+  const grand = (getTotal() + getShipping()).toFixed(2);
   const tag = CASHAPP.replace('$','');
   const note = encodeURIComponent(`LUX BEAM Order ${data.orderId}`);
   showToast('Opening Cash App…');
@@ -767,7 +800,7 @@ function initPayPal() {
     return;
   }
   const total = getTotal();
-  const grand = (total + (total >= 50 ? 0 : 4.99)).toFixed(2);
+  const grand = (total + getShipping()).toFixed(2);
 
   paypal.Buttons({
     style: { layout: 'vertical', color: 'blue', shape: 'rect', label: 'pay' },
@@ -878,123 +911,135 @@ Then publish as CSV:
 │  STEP 2 — SET UP ORDER & TRANSACTION SHEETS                      │
 ╚─────────────────────────────────────────────────────────────────╝
 
-In the same Google Sheet, create TWO tabs:
+╔─────────────────────────────────────────────────────────────────╗
+│  STEP 2 — APPS SCRIPT (REPLACE YOUR EXISTING SCRIPT)           │
+╚─────────────────────────────────────────────────────────────────╝
 
-  Tab 1 — "Orders"  (one row per order)
-  Tab 2 — "Transactions"  (one row per item in each order)
+⚠️  IMPORTANT: The old doPost() script did NOT work because browsers
+    block JSON POST bodies in no-cors mode — Apps Script never received
+    the data. Replace it entirely with this doGet() version below.
 
-── Orders tab headers (Row 1) ──────────────────────────────────
-  Order ID | Timestamp | First Name | Last Name | Email | Phone |
-  Address | City | State/ZIP | Notes | Items Summary | Item Count |
-  Subtotal | Shipping | Total | Payment Status | PayPal Order ID
-
-── Transactions tab headers (Row 1) ────────────────────────────
-  Order ID | Timestamp | Customer Name | Email | Product Name |
-  Qty | Unit Price | Line Total | Order Total | Payment Status
-
-Then go to Extensions → Apps Script and paste this FULL script:
+Go to Extensions → Apps Script, DELETE everything, paste this:
 
 ──────────────────────────────────────────────────────────────────
-function doPost(e) {
-  var ss  = SpreadsheetApp.getActiveSpreadsheet();
-  var d   = JSON.parse(e.postData.contents);
-  var now = d.timestamp;
+function doGet(e) {
+  try {
+    var d = JSON.parse(e.parameter.payload);
+    var ss  = SpreadsheetApp.getActiveSpreadsheet();
+    var now = d.timestamp;
 
-  // ── 1. Write to Orders sheet (one row per order) ──────────────
-  var orders = ss.getSheetByName('Orders');
-  if (!orders) orders = ss.insertSheet('Orders');
-
-  // Auto-add headers if sheet is empty
-  if (orders.getLastRow() === 0) {
+    // ── 1. Orders sheet ──────────────────────────────────────────
+    var orders = ss.getSheetByName('Orders');
+    if (!orders) orders = ss.insertSheet('Orders');
+    if (orders.getLastRow() === 0) {
+      orders.appendRow([
+        'Order ID','Timestamp','First Name','Last Name','Email','Phone',
+        'Address','City','State/ZIP','Notes','Items Summary','Item Count',
+        'Subtotal','Shipping','Total','Payment Status',
+        'PayPal Order ID','PayPal Email','PayPal Name'
+      ]);
+      orders.getRange(1,1,1,19)
+        .setFontWeight('bold')
+        .setBackground('#0a0a0a')
+        .setFontColor('#ffffff');
+      orders.setFrozenRows(1);
+    }
     orders.appendRow([
-      'Order ID','Timestamp','First Name','Last Name','Email','Phone',
-      'Address','City','State/ZIP','Notes','Items Summary','Item Count',
-      'Subtotal','Shipping','Total','Payment Status','PayPal Order ID',
-      'PayPal Email','PayPal Name'
+      d.orderId, now,
+      d.firstName, d.lastName, d.email, d.phone,
+      d.address, d.city, d.stateZip, d.notes,
+      d.items, d.itemCount,
+      d.subtotal, d.shipping, d.total,
+      d.paymentStatus, d.paypalOrderId || '',
+      d.payerEmail || '', d.payerName || ''
     ]);
-    orders.getRange(1,1,1,19).setFontWeight('bold').setBackground('#0a0a0a').setFontColor('#ffffff');
-    orders.setFrozenRows(1);
+
+    // Color-code the Payment Status cell
+    var lastRow = orders.getLastRow();
+    var statusCell = orders.getRange(lastRow, 16);
+    if (d.paymentStatus === 'Paid via PayPal') {
+      statusCell.setBackground('#d1fae5').setFontColor('#065f46');
+    } else if (d.paymentStatus === 'Awaiting Cash App') {
+      statusCell.setBackground('#dcfce7').setFontColor('#166534');
+    } else if (d.paymentStatus.indexOf('Awaiting') !== -1) {
+      statusCell.setBackground('#fef3c7').setFontColor('#92400e');
+    } else {
+      statusCell.setBackground('#fee2e2').setFontColor('#991b1b');
+    }
+
+    // ── 2. Transactions sheet (one row per line item) ────────────
+    var txns = ss.getSheetByName('Transactions');
+    if (!txns) txns = ss.insertSheet('Transactions');
+    if (txns.getLastRow() === 0) {
+      txns.appendRow([
+        'Order ID','Timestamp','Customer Name','Email',
+        'Product Name','Qty','Unit Price','Line Total',
+        'Order Total','Payment Status'
+      ]);
+      txns.getRange(1,1,1,10)
+        .setFontWeight('bold')
+        .setBackground('#0a0a0a')
+        .setFontColor('#ffffff');
+      txns.setFrozenRows(1);
+    }
+    var items = d.lineItems || [];
+    var custName = (d.firstName || '') + ' ' + (d.lastName || '');
+    items.forEach(function(item) {
+      txns.appendRow([
+        d.orderId, now, custName, d.email,
+        item.name, item.qty, item.unitPrice, item.lineTotal,
+        d.total, d.paymentStatus
+      ]);
+    });
+
+    // ── 3. Dashboard sheet ───────────────────────────────────────
+    var dash = ss.getSheetByName('Dashboard');
+    if (!dash) {
+      dash = ss.insertSheet('Dashboard');
+      dash.getRange('A1').setValue('📊 Sales Dashboard')
+          .setFontSize(16).setFontWeight('bold');
+      dash.getRange('A3').setValue('Total Orders');
+      dash.getRange('A4').setValue('Total Revenue');
+      dash.getRange('A5').setValue('Total Items Sold');
+      dash.getRange('A6').setValue('Last Order');
+      dash.getRange('A3:A6').setFontWeight('bold');
+      dash.getRange('B3').setFormula('=COUNTA(Orders!A2:A)');
+      dash.getRange('B4').setFormula('=SUM(Orders!O2:O)');
+      dash.getRange('B4').setNumberFormat('"$"#,##0.00');
+      dash.getRange('B5').setFormula('=SUM(Orders!L2:L)');
+      dash.getRange('B6').setFormula('=MAX(Orders!B2:B)');
+      dash.setColumnWidth(1, 160);
+      dash.setColumnWidth(2, 200);
+    }
+
+    return ContentService
+      .createTextOutput(JSON.stringify({ status: 'ok', orderId: d.orderId }))
+      .setMimeType(ContentService.MimeType.JSON);
+
+  } catch(err) {
+    return ContentService
+      .createTextOutput(JSON.stringify({ status: 'error', message: err.toString() }))
+      .setMimeType(ContentService.MimeType.JSON);
   }
-
-  orders.appendRow([
-    d.orderId, now,
-    d.firstName, d.lastName, d.email, d.phone,
-    d.address, d.city, d.stateZip, d.notes,
-    d.items, d.itemCount,
-    d.subtotal, d.shipping, d.total,
-    d.paymentStatus, d.paypalOrderId || '',
-    d.payerEmail || '', d.payerName || ''
-  ]);
-
-  // Color-code payment status
-  var lastRow = orders.getLastRow();
-  var statusCell = orders.getRange(lastRow, 16);
-  if (d.paymentStatus === 'Paid via PayPal') {
-    statusCell.setBackground('#d1fae5').setFontColor('#065f46');
-  } else if (d.paymentStatus === 'Awaiting PayPal') {
-    statusCell.setBackground('#fef3c7').setFontColor('#92400e');
-  } else {
-    statusCell.setBackground('#fee2e2').setFontColor('#991b1b');
-  }
-
-  // ── 2. Write to Transactions sheet (one row per line item) ─────
-  var txns = ss.getSheetByName('Transactions');
-  if (!txns) txns = ss.insertSheet('Transactions');
-
-  if (txns.getLastRow() === 0) {
-    txns.appendRow([
-      'Order ID','Timestamp','Customer Name','Email',
-      'Product Name','Qty','Unit Price','Line Total',
-      'Order Total','Payment Status'
-    ]);
-    txns.getRange(1,1,1,10).setFontWeight('bold').setBackground('#0a0a0a').setFontColor('#ffffff');
-    txns.setFrozenRows(1);
-  }
-
-  var items = d.lineItems || [];
-  var custName = d.firstName + ' ' + d.lastName;
-  items.forEach(function(item) {
-    txns.appendRow([
-      d.orderId, now, custName, d.email,
-      item.name, item.qty, item.unitPrice, item.lineTotal,
-      d.total, d.paymentStatus
-    ]);
-  });
-
-  // ── 3. Update summary stats on a Dashboard sheet ───────────────
-  var dash = ss.getSheetByName('Dashboard');
-  if (!dash) {
-    dash = ss.insertSheet('Dashboard');
-    dash.getRange('A1').setValue('📊 Sales Dashboard').setFontSize(16).setFontWeight('bold');
-    dash.getRange('A3').setValue('Total Orders');
-    dash.getRange('A4').setValue('Total Revenue');
-    dash.getRange('A5').setValue('Total Items Sold');
-    dash.getRange('A6').setValue('Last Order');
-    dash.getRange('A3:A6').setFontWeight('bold');
-    dash.getRange('B3').setFormula("=COUNTA(Orders!A2:A)");
-    dash.getRange('B4').setFormula('=SUM(Orders!O2:O)');
-    dash.getRange('B4').setNumberFormat('"$"#,##0.00');
-    dash.getRange('B5').setFormula("=SUM(Orders!L2:L)");
-    dash.getRange('B6').setFormula("=MAX(Orders!B2:B)");
-    dash.setColumnWidth(1, 160);
-    dash.setColumnWidth(2, 200);
-  }
-
-  return ContentService
-    .createTextOutput(JSON.stringify({status:'ok', orderId: d.orderId}))
-    .setMimeType(ContentService.MimeType.JSON);
 }
 ──────────────────────────────────────────────────────────────────
 
-Deploy → New Deployment
-  Type: Web App | Execute as: Me | Who has access: Anyone
-  Click Deploy → Copy the Web App URL
-  Paste it as ORDER_SCRIPT_URL in the HTML file.
+After pasting:
+  1. Click Save (💾)
+  2. Click Deploy → New Deployment (or "Manage Deployments" if updating)
+  3. Type: Web App
+  4. Execute as: Me
+  5. Who has access: Anyone
+  6. Click Deploy → Copy the Web App URL
+  7. Paste as ORDER_SCRIPT_URL in your HTML file
 
-What gets tracked automatically:
-  Orders tab       → Every order with full customer + payment info
-  Transactions tab → Every individual item sold (great for inventory)
-  Dashboard tab    → Live totals: orders, revenue, items sold, last order
+⚠️  If you already deployed before, you MUST create a NEW deployment
+    (not just save) — otherwise Google serves the old cached script.
+
+To test it worked: paste your Web App URL into a browser tab and add:
+  ?payload={"test":"hello"}
+You should see: {"status":"error",...} — that means it's reachable!
+Then place a real test order and check your Orders sheet.
 
 
 ╔─────────────────────────────────────────────────────────────────╗
@@ -1005,6 +1050,7 @@ What gets tracked automatically:
   2. Copy Client ID → replace YOUR_PAYPAL_CLIENT_ID in the
      <script src> tag at the bottom of the HTML
   3. Replace YOURPAYPALME with your PayPal.Me username
+  4. Replace $YOURCASHTAG with your Cash App $Cashtag
 
 ═══════════════════════════════════════════════════════════════════
 -->
