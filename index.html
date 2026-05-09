@@ -260,7 +260,7 @@
 
   .cashapp-info { background: var(--bg); border: 1px solid var(--border); border-radius: 10px; padding: 14px 16px; margin-bottom: 12px; text-align: center; }
   .cashtag-display { font-family: 'Space Grotesk', sans-serif; font-size: 1.5rem; font-weight: 700; color: #00D632; letter-spacing: -0.01em; margin-bottom: 6px; }
-  .cashapp-hint { font-size: 0.8rem; color: var(--muted); line-height: 1.5; }
+  .pay-note { font-size: 0.8rem; color: var(--muted); margin-bottom: 12px; line-height: 1.5; }
 
   
 
@@ -376,11 +376,7 @@
 
           <!-- PayPal Panel -->
           <div class="pay-panel" id="panel-paypal">
-            <button class="pay-btn paypal-btn" onclick="payWithPayPal()">
-              <svg viewBox="0 0 24 24" width="18" height="18" fill="none"><path d="M7.5 21H3l3-18h7c3.5 0 5.5 1.5 5 5-0.8 5.5-4 6.5-7 6.5H8L7.5 21Z" fill="#fff"/><path d="M9 15H5.5l.8-5H9c2 0 3.5.5 3 3-.4 2-1.5 2-3 2Z" fill="rgba(255,255,255,0.7)"/></svg>
-              Pay with PayPal
-            </button>
-            <div class="paypal-divider">or use PayPal checkout</div>
+            <p class="pay-note">Complete your payment securely through PayPal. Your order is confirmed automatically once payment clears.</p>
             <div id="paypal-button-container"></div>
           </div>
 
@@ -437,9 +433,9 @@ const CASHAPP = '$Walken86';
 //   'threshold' → free above a certain amount, paid below
 //   'none'   → remove shipping entirely (not shown)
 
-const SHIPPING_MODE = 'none'; // ← change this
+const SHIPPING_MODE = 'free'; // ← change this
 
-const SHIPPING_FLAT_RATE   = 7.99;  // used when mode is 'flat'
+const SHIPPING_FLAT_RATE   = 4.99;  // used when mode is 'flat'
 const SHIPPING_FREE_OVER   = 50;    // used when mode is 'threshold' (free if order >= this)
 const SHIPPING_BELOW_RATE  = 4.99;  // used when mode is 'threshold' (rate if order < above)
 // ════════════════════════════════════════════════════════
@@ -794,21 +790,28 @@ async function submitOrder() {
 // ── PAYPAL SDK BUTTONS ──
 function initPayPal() {
   const container = document.getElementById('paypal-button-container');
-  container.innerHTML = '';
+  container.innerHTML = '<div style="text-align:center;padding:12px;color:var(--muted);font-size:0.85rem">Loading PayPal…</div>';
+
   if (typeof paypal === 'undefined') {
-    container.innerHTML = '<p style="font-size:0.8rem;color:var(--muted);text-align:center">Set your PayPal Client ID to enable this button.</p>';
+    // SDK not loaded (no Client ID set) — show a direct PayPal.me fallback
+    const grand = (getTotal() + getShipping()).toFixed(2);
+    container.innerHTML = `
+      <button class="pay-btn paypal-btn" onclick="payWithPayPalFallback()">
+        Pay $${grand} with PayPal →
+      </button>
+      <p style="font-size:0.75rem;color:var(--muted);text-align:center;margin-top:6px">
+        Add your PayPal Client ID to enable the official checkout button.
+      </p>`;
     return;
   }
-  const total = getTotal();
-  const grand = (total + getShipping()).toFixed(2);
+
+  const grand = (getTotal() + getShipping()).toFixed(2);
 
   paypal.Buttons({
-    style: { layout: 'vertical', color: 'blue', shape: 'rect', label: 'pay' },
+    style: { layout: 'vertical', color: 'blue', shape: 'rect', label: 'pay', height: 44 },
 
-    // Validate form BEFORE PayPal popup opens
     onClick: function(data, actions) {
       if (!validateForm()) return actions.reject();
-      // Snapshot order now while form is filled
       _pendingOrder = collectOrder('Paid via PayPal');
       return actions.resolve();
     },
@@ -823,10 +826,9 @@ function initPayPal() {
     },
 
     onApprove: async function(data, actions) {
-      showToast('Processing payment…');
+      container.innerHTML = '<div style="text-align:center;padding:12px;color:var(--muted);font-size:0.85rem">Confirming payment…</div>';
       try {
         const details = await actions.order.capture();
-        // Use the pre-snapshotted order so form data is guaranteed
         const order = _pendingOrder || collectOrder('Paid via PayPal');
         order.paymentStatus = 'Paid via PayPal';
         order.paypalOrderId = details.id;
@@ -834,28 +836,37 @@ function initPayPal() {
         order.payerName = (details.payer?.name?.given_name || '') + ' ' + (details.payer?.name?.surname || '');
 
         const sent = await submitToSheets(order);
-        if (!sent) {
-          showToast('⚠️ Payment received — sheet sync failed. Check console.');
-        }
+        console.log(sent ? `✅ Order ${order.orderId} logged to Sheets` : '⚠️ Sheets sync failed — check ORDER_SCRIPT_URL');
         _pendingOrder = null;
         showSuccess();
       } catch(err) {
         console.error('PayPal capture error:', err);
-        showToast('Payment error — please contact us with your PayPal receipt.');
+        container.innerHTML = '<p style="color:#991b1b;font-size:0.85rem;text-align:center">Payment capture failed. Please contact us with your PayPal receipt.</p>';
       }
     },
 
     onCancel: function() {
       _pendingOrder = null;
       showToast('Payment cancelled.');
+      initPayPal(); // re-render buttons
     },
 
     onError: function(err) {
       console.error('PayPal SDK error:', err);
-      showToast('PayPal error — please try again or use Cash App.');
+      container.innerHTML = '<p style="color:#991b1b;font-size:0.85rem;text-align:center">PayPal error. Please try Cash App or contact us.</p>';
     }
 
   }).render('#paypal-button-container');
+}
+
+async function payWithPayPalFallback() {
+  if (!validateForm()) return;
+  const data = collectOrder('Awaiting PayPal');
+  await submitToSheets(data);
+  const grand = (getTotal() + getShipping()).toFixed(2);
+  showToast('Opening PayPal…');
+  window.open(`https://www.paypal.com/paypalme/${PAYPALME}/${grand}USD`, '_blank');
+  showSuccess();
 }
 
 function showSuccess() {
