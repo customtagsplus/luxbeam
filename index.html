@@ -475,7 +475,7 @@ async function loadProducts() {
     products = parseCSV(csv);
     if (!products.length) throw new Error('Sheet appears empty');
     renderProducts();
-    countEl.textContent = products.length + ' product' + (products.length !== 1 ? 's' : '') + ' · Free shipping over $50';
+    countEl.textContent = products.length + ' product' + (products.length !== 1 ? 's' : '') ;
   } catch (err) {
     console.error(err);
     grid.innerHTML = `<div class="load-error">
