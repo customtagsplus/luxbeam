@@ -46,7 +46,7 @@
   .section-header p { color: var(--muted); font-size: 0.875rem; }
 
   /* ── FILTER BAR ── */
-  .filter-bar { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; margin-bottom: 1.75rem; padding: 1rem 1.25rem; background: rgba(255,255,255,0.85); backdrop-filter: blur(8px); border: 1px solid var(--border); border-radius: var(--radius); }
+  .filter-bar { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; margin-bottom: 1.75rem; padding: 1rem 1.25rem; background: rgba(255,255,255,0.55); backdrop-filter: blur(12px); border: 1px solid rgba(255,255,255,0.5); border-radius: var(--radius); }
   .filter-label { font-size: 0.78rem; font-weight: 600; color: var(--muted); letter-spacing: 0.06em; text-transform: uppercase; white-space: nowrap; }
   .filter-divider { width: 1px; height: 20px; background: var(--border); }
   .brand-filters { display: flex; gap: 8px; flex-wrap: wrap; }
@@ -69,7 +69,8 @@
   .sk-price { height: 20px; width: 50%; margin-top: 14px; }
 
   /* PRODUCT CARD */
-  .product-card { background: rgba(255,255,255,0.82); border-radius: var(--radius); border: 1px solid var(--border); overflow: hidden; transition: transform 0.25s, box-shadow 0.25s; display: flex; flex-direction: column; backdrop-filter: blur(2px); }
+  .product-card { background: rgba(255,255,255,0.55); border-radius: var(--radius); border: 1px solid rgba(255,255,255,0.6); overflow: hidden; transition: transform 0.25s, box-shadow 0.25s; display: flex; flex-direction: column; backdrop-filter: blur(6px); }
+  .product-card:hover { background: rgba(255,255,255,0.75); }
   .product-card:hover { transform: translateY(-4px); box-shadow: var(--shadow-hover); }
   .product-card.hidden { display: none; }
 
@@ -843,7 +844,7 @@ function showToast(msg) {
   function spawnParticles() {
     if (!loadedImgs.length) return;
     const w = window.innerWidth, h = window.innerHeight;
-    const count = Math.min(18, Math.max(6, loadedImgs.length * 2));
+    const count = Math.min(60, Math.max(20, loadedImgs.length * 6));
     bgParticles = Array.from({ length: count }, (_, i) => {
       const img = loadedImgs[i % loadedImgs.length];
       return createParticle(img, w, h, true);
@@ -851,20 +852,20 @@ function showToast(msg) {
   }
 
   function createParticle(img, w, h, random) {
-    const size = 90 + Math.random() * 130;
+    const size = 200 + Math.random() * 280;
     return {
       img,
       x: random ? Math.random() * w : (Math.random() > 0.5 ? -size : w + size),
       y: random ? Math.random() * h : Math.random() * h,
       size,
-      vx: (Math.random() - 0.5) * 0.35,
-      vy: (Math.random() - 0.5) * 0.25,
-      alpha: 0,
-      targetAlpha: 0.04 + Math.random() * 0.07,
+      vx: (Math.random() - 0.5) * 0.5,
+      vy: (Math.random() - 0.5) * 0.4,
+      alpha: random ? 0.3 + Math.random() * 0.25 : 0,
+      targetAlpha: 0.45 + Math.random() * 0.3,
       angle: Math.random() * Math.PI * 2,
-      spin: (Math.random() - 0.5) * 0.003,
-      scale: 0.8 + Math.random() * 0.4,
-      fadeIn: true,
+      spin: (Math.random() - 0.5) * 0.004,
+      scale: 0.9 + Math.random() * 0.6,
+      fadeIn: !random,
     };
   }
 
@@ -889,7 +890,7 @@ function showToast(msg) {
     bgParticles.forEach((p, idx) => {
       // Fade in
       if (p.fadeIn) {
-        p.alpha += 0.002;
+        p.alpha += 0.008;
         if (p.alpha >= p.targetAlpha) { p.alpha = p.targetAlpha; p.fadeIn = false; }
       }
 
@@ -913,7 +914,7 @@ function showToast(msg) {
       ctx.translate(p.x, p.y);
       ctx.rotate(p.angle);
       ctx.scale(p.scale, p.scale);
-      ctx.filter = 'blur(6px) saturate(0.6)';
+      ctx.filter = 'blur(1px) saturate(1.3) brightness(1.05)';
       const s = p.size;
       ctx.drawImage(p.img, -s/2, -s/2, s, s);
       ctx.filter = 'none';
