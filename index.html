@@ -13,7 +13,7 @@
     --shadow-hover: 0 4px 12px rgba(0,0,0,0.10), 0 12px 32px rgba(0,0,0,0.08);
   }
   * { margin: 0; padding: 0; box-sizing: border-box; }
-  body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+  body { font-family: 'DM Sans', sans-serif; background: #f0f0eb; color: var(--text); min-height: 100vh; }
 
   /* NAV */
   nav { background: var(--surface); border-bottom: 1px solid var(--border); padding: 0 2rem; display: flex; align-items: center; justify-content: space-between; height: 64px; position: sticky; top: 0; z-index: 100; }
@@ -24,21 +24,29 @@
   .cart-count { background: var(--accent); color: var(--text); border-radius: 50%; width: 20px; height: 20px; font-size: 0.7rem; font-weight: 600; display: inline-flex; align-items: center; justify-content: center; }
 
   /* HERO */
-  .hero { background: var(--text); color: #fff; padding: 5rem 2rem; text-align: center; position: relative; overflow: hidden; }
-  .hero::before { content: ''; position: absolute; top: -60px; left: 50%; transform: translateX(-50%); width: 500px; height: 500px; background: radial-gradient(circle, rgba(244,161,0,0.12) 0%, transparent 70%); pointer-events: none; }
+  .hero { position: relative; overflow: hidden; color: #fff; text-align: center; }
+  #heroCanvas { display: block; width: 100%; height: 420px; background: #000814; }
+  .hero-content {
+    position: absolute; inset: 0; display: flex; flex-direction: column;
+    align-items: center; justify-content: center; pointer-events: none;
+    padding: 2rem;
+  }
   .hero-tag { display: inline-block; background: rgba(244,161,0,0.15); color: var(--accent); border: 1px solid rgba(244,161,0,0.3); border-radius: 99px; padding: 4px 14px; font-size: 0.8rem; font-weight: 500; letter-spacing: 0.06em; text-transform: uppercase; margin-bottom: 1.25rem; }
-  .hero h1 { font-family: 'Space Grotesk', sans-serif; font-size: clamp(2.2rem, 5vw, 3.5rem); font-weight: 700; letter-spacing: -0.03em; line-height: 1.1; margin-bottom: 1rem; }
+  .hero h1 { font-family: 'Space Grotesk', sans-serif; font-size: clamp(2.2rem, 5vw, 3.5rem); font-weight: 700; letter-spacing: -0.03em; line-height: 1.1; margin-bottom: 1rem; text-shadow: 0 0 40px rgba(244,161,0,0.5); }
   .hero h1 span { color: var(--accent); }
   .hero p { color: #aaa; font-size: 1rem; max-width: 480px; margin: 0 auto; line-height: 1.6; }
 
   /* PRODUCTS SECTION */
-  .products-section { padding: 2.5rem 2rem 4rem; max-width: 1200px; margin: 0 auto; }
+  .products-section { padding: 2.5rem 2rem 4rem; max-width: 1200px; margin: 0 auto; position: relative; }
+  .products-bg-wrap { position: fixed; inset: 0; z-index: 0; pointer-events: none; overflow: hidden; }
+  #productsBgCanvas { width: 100%; height: 100%; display: block; }
+  .products-section > * { position: relative; z-index: 1; }
   .section-header { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 1.5rem; }
   .section-header h2 { font-family: 'Space Grotesk', sans-serif; font-size: 1.5rem; font-weight: 600; letter-spacing: -0.02em; }
   .section-header p { color: var(--muted); font-size: 0.875rem; }
 
   /* ── FILTER BAR ── */
-  .filter-bar { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; margin-bottom: 1.75rem; padding: 1rem 1.25rem; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); }
+  .filter-bar { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; margin-bottom: 1.75rem; padding: 1rem 1.25rem; background: rgba(255,255,255,0.85); backdrop-filter: blur(8px); border: 1px solid var(--border); border-radius: var(--radius); }
   .filter-label { font-size: 0.78rem; font-weight: 600; color: var(--muted); letter-spacing: 0.06em; text-transform: uppercase; white-space: nowrap; }
   .filter-divider { width: 1px; height: 20px; background: var(--border); }
   .brand-filters { display: flex; gap: 8px; flex-wrap: wrap; }
@@ -61,7 +69,7 @@
   .sk-price { height: 20px; width: 50%; margin-top: 14px; }
 
   /* PRODUCT CARD */
-  .product-card { background: var(--surface); border-radius: var(--radius); border: 1px solid var(--border); overflow: hidden; transition: transform 0.25s, box-shadow 0.25s; display: flex; flex-direction: column; }
+  .product-card { background: rgba(255,255,255,0.82); border-radius: var(--radius); border: 1px solid var(--border); overflow: hidden; transition: transform 0.25s, box-shadow 0.25s; display: flex; flex-direction: column; backdrop-filter: blur(2px); }
   .product-card:hover { transform: translateY(-4px); box-shadow: var(--shadow-hover); }
   .product-card.hidden { display: none; }
 
@@ -223,10 +231,15 @@
 </nav>
 
 <section class="hero">
-  <div class="hero-tag">✦ Premium Illumination</div>
-  <h1>Light the Way.<br><span>Built to Last.</span></h1>
-  <p>Professional-grade flashlights engineered for performance. From everyday carry to extreme tactical use.</p>
+  <canvas id="heroCanvas"></canvas>
+  <div class="hero-content">
+    <div class="hero-tag">✦ Premium Illumination</div>
+    <h1>Light the Way.<br><span>Built to Last.</span></h1>
+    <p>Professional-grade flashlights engineered for performance. From everyday carry to extreme tactical use.</p>
+  </div>
 </section>
+
+<div class="products-bg-wrap"><canvas id="productsBgCanvas"></canvas></div>
 
 <section class="products-section">
   <div class="section-header">
@@ -367,6 +380,7 @@ async function loadProducts() {
     if (!products.length) throw new Error('Sheet appears empty');
     renderProducts();
     buildBrandFilter();
+    updateProductsBg();
     countEl.textContent = products.length + ' product' + (products.length !== 1 ? 's' : '');
   } catch (err) {
     console.error(err);
@@ -456,6 +470,7 @@ function filterBrand(brand) {
     card.classList.toggle('hidden', !match);
   });
   updateFilterCount();
+  updateProductsBg(); // ← refresh background images to match filter
 }
 
 function updateFilterCount() {
@@ -564,6 +579,7 @@ function loadDemoProducts() {
   products.forEach(p => { if (!p.selectedColor && p.colors.length) p.selectedColor = p.colors[0].label; });
   renderProducts();
   buildBrandFilter();
+  updateProductsBg();
   document.getElementById('productCount').textContent = products.length + ' demo products · Add your Sheet CSV URL to go live';
 }
 
@@ -773,6 +789,289 @@ function showToast(msg) {
   t.textContent = msg; t.classList.add('show');
   setTimeout(() => t.classList.remove('show'), 2600);
 }
+
+// ── PRODUCTS BACKGROUND CANVAS ──
+(function() {
+  const canvas = document.getElementById('productsBgCanvas');
+  const ctx = canvas.getContext('2d');
+  let bgParticles = [];
+  let loadedImgs = [];
+  let animRunning = false;
+  let bgT = 0;
+
+  function resize() {
+    canvas.width = window.innerWidth * (devicePixelRatio || 1);
+    canvas.height = window.innerHeight * (devicePixelRatio || 1);
+  }
+  resize();
+  window.addEventListener('resize', () => { resize(); spawnParticles(); });
+
+  // Called whenever products load or filter changes
+  window.updateProductsBg = function() {
+    const filtered = activeBrand === 'All'
+      ? products
+      : products.filter(p => p.brand === activeBrand);
+
+    // Collect all unique image URLs from visible products
+    const urls = [];
+    filtered.forEach(p => {
+      (p.images && p.images.length ? p.images : (p.imageUrl ? [p.imageUrl] : [])).forEach(u => {
+        if (u && !urls.includes(u)) urls.push(u);
+      });
+    });
+
+    if (!urls.length) { bgParticles = []; return; }
+
+    // Load images then spawn particles
+    loadedImgs = [];
+    let pending = urls.length;
+    urls.forEach(url => {
+      const img = new Image();
+      img.crossOrigin = 'anonymous';
+      img.onload = () => {
+        loadedImgs.push(img);
+        pending--;
+        if (pending === 0) spawnParticles();
+      };
+      img.onerror = () => { pending--; if (pending === 0) spawnParticles(); };
+      img.src = url;
+    });
+
+    if (!animRunning) startBgAnim();
+  };
+
+  function spawnParticles() {
+    if (!loadedImgs.length) return;
+    const w = window.innerWidth, h = window.innerHeight;
+    const count = Math.min(18, Math.max(6, loadedImgs.length * 2));
+    bgParticles = Array.from({ length: count }, (_, i) => {
+      const img = loadedImgs[i % loadedImgs.length];
+      return createParticle(img, w, h, true);
+    });
+  }
+
+  function createParticle(img, w, h, random) {
+    const size = 90 + Math.random() * 130;
+    return {
+      img,
+      x: random ? Math.random() * w : (Math.random() > 0.5 ? -size : w + size),
+      y: random ? Math.random() * h : Math.random() * h,
+      size,
+      vx: (Math.random() - 0.5) * 0.35,
+      vy: (Math.random() - 0.5) * 0.25,
+      alpha: 0,
+      targetAlpha: 0.04 + Math.random() * 0.07,
+      angle: Math.random() * Math.PI * 2,
+      spin: (Math.random() - 0.5) * 0.003,
+      scale: 0.8 + Math.random() * 0.4,
+      fadeIn: true,
+    };
+  }
+
+  function startBgAnim() {
+    animRunning = true;
+    function frame() {
+      drawBg();
+      bgT += 0.008;
+      requestAnimationFrame(frame);
+    }
+    frame();
+  }
+
+  function drawBg() {
+    const dpr = devicePixelRatio || 1;
+    const w = window.innerWidth, h = window.innerHeight;
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    ctx.clearRect(0, 0, w, h);
+
+    if (!bgParticles.length || !loadedImgs.length) return;
+
+    bgParticles.forEach((p, idx) => {
+      // Fade in
+      if (p.fadeIn) {
+        p.alpha += 0.002;
+        if (p.alpha >= p.targetAlpha) { p.alpha = p.targetAlpha; p.fadeIn = false; }
+      }
+
+      // Gentle drift
+      p.x += p.vx + Math.sin(bgT * 0.4 + idx) * 0.15;
+      p.y += p.vy + Math.cos(bgT * 0.3 + idx * 1.3) * 0.1;
+      p.angle += p.spin;
+
+      // Wrap around edges with fade out/in
+      const pad = p.size;
+      if (p.x < -pad * 2 || p.x > w + pad * 2 || p.y < -pad * 2 || p.y > h + pad * 2) {
+        const img = loadedImgs[Math.floor(Math.random() * loadedImgs.length)];
+        const np = createParticle(img, w, h, false);
+        bgParticles[idx] = np;
+        return;
+      }
+
+      // Draw blurred, faded image
+      ctx.save();
+      ctx.globalAlpha = p.alpha;
+      ctx.translate(p.x, p.y);
+      ctx.rotate(p.angle);
+      ctx.scale(p.scale, p.scale);
+      ctx.filter = 'blur(6px) saturate(0.6)';
+      const s = p.size;
+      ctx.drawImage(p.img, -s/2, -s/2, s, s);
+      ctx.filter = 'none';
+      ctx.restore();
+    });
+  }
+})();
+
+// ── HERO CANVAS ANIMATION ──
+(function() {
+  const canvas = document.getElementById('heroCanvas');
+  const ctx = canvas.getContext('2d');
+  let t = 0, animId;
+
+  function resize() {
+    canvas.width = canvas.offsetWidth * (devicePixelRatio || 1);
+    canvas.height = canvas.offsetHeight * (devicePixelRatio || 1);
+  }
+  resize();
+  window.addEventListener('resize', resize);
+
+  const W = () => canvas.offsetWidth;
+  const H = () => canvas.offsetHeight;
+  const dpr = () => devicePixelRatio || 1;
+
+  const beams = Array.from({length: 5}, (_, i) => ({
+    phase: Math.random() * Math.PI * 2,
+    swayAmp: 0.15 + Math.random() * 0.25,
+    swaySpeed: 0.4 + Math.random() * 0.6,
+    spread: 0.09 + Math.random() * 0.08,
+    len: 0.7 + Math.random() * 0.25,
+    offsetX: (i / 4) * 0.8 + 0.1,
+    color: i % 3 === 0 ? '255,255,220' : i % 3 === 1 ? '180,220,255' : '255,235,160',
+  }));
+
+  const lasers = Array.from({length: 14}, () => ({
+    x: Math.random(), y: Math.random(),
+    angle: Math.random() * Math.PI,
+    speed: 0.15 + Math.random() * 0.4,
+    length: 50 + Math.random() * 160,
+    width: 0.5 + Math.random() * 1.5,
+    color: ['255,50,50','50,255,120','80,180,255','255,200,50','200,80,255','255,100,200','50,220,200','255,140,40'][Math.floor(Math.random()*8)],
+    alpha: 0.35 + Math.random() * 0.45,
+    phase: Math.random() * Math.PI * 2,
+    pulseSpeed: 0.8 + Math.random() * 2,
+  }));
+
+  const particles = Array.from({length: 70}, () => ({
+    x: Math.random(), y: Math.random(),
+    vx: (Math.random() - 0.5) * 0.003,
+    vy: -(0.001 + Math.random() * 0.003),
+    r: 0.5 + Math.random() * 1.5,
+    alpha: Math.random(),
+    color: ['255,200,100','100,200,255','200,100,255','255,255,255'][Math.floor(Math.random()*4)],
+  }));
+
+  const flares = Array.from({length: 5}, () => ({
+    x: Math.random(), y: Math.random() * 0.7,
+    vx: (Math.random() - 0.5) * 0.003,
+    vy: (Math.random() - 0.5) * 0.003,
+    r: 3 + Math.random() * 4,
+    color: ['255,200,50','100,220,255','255,100,150'][Math.floor(Math.random()*3)],
+  }));
+
+  function draw() {
+    const w = W(), h = H(), d = dpr();
+    ctx.setTransform(d, 0, 0, d, 0, 0);
+    ctx.fillStyle = '#000814';
+    ctx.fillRect(0, 0, w, h);
+
+    // Stars
+    for (let s = 0; s < 90; s++) {
+      const sx = (s * 137.5) % w, sy = (s * 93.7) % h;
+      const sa = 0.15 + 0.4 * Math.abs(Math.sin(t * 0.4 + s));
+      ctx.beginPath(); ctx.arc(sx, sy, 0.7, 0, Math.PI*2);
+      ctx.fillStyle = `rgba(255,255,255,${sa})`; ctx.fill();
+    }
+
+    // Flashlight beams
+    beams.forEach(b => {
+      const sway = Math.sin(t * b.swaySpeed + b.phase) * b.swayAmp;
+      const ang = -Math.PI/2 + sway;
+      const bx = b.offsetX * w + Math.sin(t * 0.25 + b.phase) * w * 0.04;
+      const by = h * 0.97;
+      const ex = bx + Math.cos(ang) * h * b.len;
+      const ey = by + Math.sin(ang) * h * b.len;
+      const grad = ctx.createLinearGradient(bx, by, ex, ey);
+      grad.addColorStop(0, `rgba(${b.color},0.5)`);
+      grad.addColorStop(0.35, `rgba(${b.color},0.18)`);
+      grad.addColorStop(1, `rgba(${b.color},0)`);
+      const sp = b.spread;
+      ctx.save();
+      ctx.beginPath();
+      ctx.moveTo(bx + Math.cos(ang - sp)*3, by + Math.sin(ang - sp)*3);
+      ctx.lineTo(bx + Math.cos(ang - sp*0.25)*h*b.len, by + Math.sin(ang - sp*0.25)*h*b.len);
+      ctx.lineTo(bx + Math.cos(ang + sp*0.25)*h*b.len, by + Math.sin(ang + sp*0.25)*h*b.len);
+      ctx.lineTo(bx + Math.cos(ang + sp)*3, by + Math.sin(ang + sp)*3);
+      ctx.closePath();
+      ctx.fillStyle = grad; ctx.fill();
+      const sg = ctx.createRadialGradient(bx, by, 0, bx, by, 18);
+      sg.addColorStop(0, `rgba(${b.color},1)`); sg.addColorStop(1, `rgba(${b.color},0)`);
+      ctx.beginPath(); ctx.arc(bx, by, 18, 0, Math.PI*2);
+      ctx.fillStyle = sg; ctx.fill();
+      ctx.restore();
+    });
+
+    // Laser lines
+    lasers.forEach(l => {
+      const pulse = 0.5 + 0.5 * Math.sin(t * l.pulseSpeed + l.phase);
+      const alpha = l.alpha * (0.4 + 0.6 * pulse);
+      const cx = ((l.x * w + t * l.speed * w * 0.08) % (w * 1.2)) - w * 0.1;
+      const cy = l.y * h + Math.sin(t * l.speed * 0.05 + l.phase) * h * 0.2;
+      const ex = cx + Math.cos(l.angle) * l.length;
+      const ey = cy + Math.sin(l.angle) * l.length;
+      ctx.save();
+      ctx.beginPath(); ctx.moveTo(cx, cy); ctx.lineTo(ex, ey);
+      ctx.strokeStyle = `rgba(${l.color},${alpha})`;
+      ctx.lineWidth = l.width; ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(cx, cy); ctx.lineTo(ex, ey);
+      ctx.strokeStyle = `rgba(255,255,255,${alpha*0.25})`;
+      ctx.lineWidth = l.width * 0.3; ctx.stroke();
+      ctx.restore();
+    });
+
+    // Particles
+    particles.forEach(p => {
+      p.x += p.vx; p.y += p.vy; p.alpha -= 0.002;
+      if (p.alpha <= 0 || p.y < -0.02) { p.x = Math.random(); p.y = 1.02; p.alpha = 0.5 + Math.random()*0.5; }
+      ctx.beginPath(); ctx.arc(p.x * w, p.y * h, p.r, 0, Math.PI*2);
+      ctx.fillStyle = `rgba(${p.color},${p.alpha})`; ctx.fill();
+    });
+
+    // Lens flares
+    flares.forEach(f => {
+      f.x += f.vx; f.y += f.vy;
+      if (f.x < 0 || f.x > 1) f.vx *= -1;
+      if (f.y < 0 || f.y > 0.8) f.vy *= -1;
+      const pulse = 0.6 + 0.4 * Math.sin(t * 2.5 + f.x * 10);
+      const fx = f.x * w, fy = f.y * h, fr = f.r * pulse;
+      const fg = ctx.createRadialGradient(fx, fy, 0, fx, fy, fr * 5);
+      fg.addColorStop(0, `rgba(${f.color},0.9)`);
+      fg.addColorStop(0.4, `rgba(${f.color},0.25)`);
+      fg.addColorStop(1, `rgba(${f.color},0)`);
+      ctx.beginPath(); ctx.arc(fx, fy, fr * 5, 0, Math.PI*2);
+      ctx.fillStyle = fg; ctx.fill();
+    });
+
+    // Bottom amber glow
+    const bg = ctx.createLinearGradient(0, h*0.65, 0, h);
+    bg.addColorStop(0, 'rgba(244,161,0,0)');
+    bg.addColorStop(1, 'rgba(244,161,0,0.07)');
+    ctx.fillStyle = bg; ctx.fillRect(0, h*0.65, w, h*0.35);
+
+    t += 0.016;
+    animId = requestAnimationFrame(draw);
+  }
+  draw();
+})();
 
 loadProducts();
 </script>
