@@ -13,7 +13,7 @@
     --shadow-hover: 0 4px 12px rgba(0,0,0,0.10), 0 12px 32px rgba(0,0,0,0.08);
   }
   * { margin: 0; padding: 0; box-sizing: border-box; }
-  body { font-family: 'DM Sans', sans-serif; background: #f0f0eb; color: var(--text); min-height: 100vh; }
+  body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
 
   /* NAV */
   nav { background: var(--surface); border-bottom: 1px solid var(--border); padding: 0 2rem; display: flex; align-items: center; justify-content: space-between; height: 64px; position: sticky; top: 0; z-index: 100; }
@@ -38,10 +38,9 @@
 
   /* PRODUCTS SECTION */
   .products-section { padding: 2.5rem 2rem 4rem; max-width: 1200px; margin: 0 auto; position: relative; }
-  .products-bg-wrap { position: fixed; inset: 0; z-index: 0; pointer-events: none; overflow: hidden; }
+  .products-bg-wrap { position: absolute; inset: 0; z-index: 0; pointer-events: none; overflow: hidden; border-radius: var(--radius); }
   #productsBgCanvas { width: 100%; height: 100%; display: block; }
   .products-section > * { position: relative; z-index: 1; }
-  body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
   .section-header { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 1.5rem; background: transparent; }
   .section-header h2 { font-family: 'Space Grotesk', sans-serif; font-size: 1.5rem; font-weight: 600; letter-spacing: -0.02em; }
   .section-header p { color: var(--muted); font-size: 0.875rem; }
@@ -57,7 +56,8 @@
   .filter-count { margin-left: auto; font-size: 0.8rem; color: var(--muted); white-space: nowrap; }
 
   /* PRODUCT GRID */
-  .product-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 1.5rem; }
+  .product-grid-wrap { position: relative; border-radius: var(--radius); overflow: hidden; padding: 1.5rem; background: transparent; margin: 0 -1.5rem; }
+  .product-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 1.5rem; position: relative; z-index: 1; }
 
   /* SKELETON */
   .skeleton-card { background: var(--surface); border-radius: var(--radius); border: 1px solid var(--border); overflow: hidden; }
@@ -75,7 +75,7 @@
   .product-card.hidden { display: none; }
 
   /* IMAGE SLIDESHOW — transparent so background floats show through */
-  .product-img-wrap { position: relative; overflow: hidden; background: transparent; display: flex; align-items: center; justify-content: center; min-height: 200px; }
+  .product-img-wrap { position: relative; overflow: hidden; background: rgba(240,240,236,0.5); display: flex; align-items: center; justify-content: center; min-height: 200px; }
   .slides { width: 100%; }
   .slide { display: none; }
   .slide.active { display: block; }
@@ -240,8 +240,6 @@
   </div>
 </section>
 
-<div class="products-bg-wrap"><canvas id="productsBgCanvas"></canvas></div>
-
 <section class="products-section">
   <div class="section-header">
     <h2>Our Products</h2>
@@ -256,10 +254,13 @@
     <span class="filter-count" id="filterCount"></span>
   </div>
 
-  <div class="product-grid" id="productGrid">
-    <div class="skeleton-card"><div class="skeleton sk-img"></div><div class="sk-body"><div class="skeleton sk-line med"></div><div class="skeleton sk-line short"></div><div class="skeleton sk-price"></div></div></div>
-    <div class="skeleton-card"><div class="skeleton sk-img"></div><div class="sk-body"><div class="skeleton sk-line med"></div><div class="skeleton sk-line short"></div><div class="skeleton sk-price"></div></div></div>
-    <div class="skeleton-card"><div class="skeleton sk-img"></div><div class="sk-body"><div class="skeleton sk-line med"></div><div class="skeleton sk-line short"></div><div class="skeleton sk-price"></div></div></div>
+  <div class="product-grid-wrap">
+    <div class="products-bg-wrap"><canvas id="productsBgCanvas"></canvas></div>
+    <div class="product-grid" id="productGrid">
+      <div class="skeleton-card"><div class="skeleton sk-img"></div><div class="sk-body"><div class="skeleton sk-line med"></div><div class="skeleton sk-line short"></div><div class="skeleton sk-price"></div></div></div>
+      <div class="skeleton-card"><div class="skeleton sk-img"></div><div class="sk-body"><div class="skeleton sk-line med"></div><div class="skeleton sk-line short"></div><div class="skeleton sk-price"></div></div></div>
+      <div class="skeleton-card"><div class="skeleton sk-img"></div><div class="sk-body"><div class="skeleton sk-line med"></div><div class="skeleton sk-line short"></div><div class="skeleton sk-price"></div></div></div>
+    </div>
   </div>
 </section>
 
@@ -801,8 +802,9 @@ function showToast(msg) {
   let bgT = 0;
 
   function resize() {
-    canvas.width = window.innerWidth * (devicePixelRatio || 1);
-    canvas.height = window.innerHeight * (devicePixelRatio || 1);
+    const wrap = document.querySelector('.product-grid-wrap') || canvas.parentElement;
+    canvas.width = wrap.offsetWidth * (devicePixelRatio || 1);
+    canvas.height = wrap.offsetHeight * (devicePixelRatio || 1);
   }
   resize();
   window.addEventListener('resize', () => { resize(); spawnParticles(); });
@@ -843,7 +845,8 @@ function showToast(msg) {
 
   function spawnParticles() {
     if (!loadedImgs.length) return;
-    const w = window.innerWidth, h = window.innerHeight;
+    const wrap = document.querySelector('.product-grid-wrap') || canvas.parentElement;
+    const w = wrap.offsetWidth, h = wrap.offsetHeight;
     const count = Math.min(60, Math.max(20, loadedImgs.length * 6));
     bgParticles = Array.from({ length: count }, (_, i) => {
       const img = loadedImgs[i % loadedImgs.length];
@@ -881,7 +884,8 @@ function showToast(msg) {
 
   function drawBg() {
     const dpr = devicePixelRatio || 1;
-    const w = window.innerWidth, h = window.innerHeight;
+    const wrap = document.querySelector('.product-grid-wrap') || canvas.parentElement;
+    const w = wrap.offsetWidth, h = wrap.offsetHeight;
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     ctx.clearRect(0, 0, w, h);
 
