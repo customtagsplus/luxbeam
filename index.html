@@ -798,288 +798,84 @@ function showToast(msg) {
 }
 
 // ── PRODUCTS BACKGROUND CANVAS ──
-<script>
-// ─────────────────────────────────────────────────────────────
-//  PRODUCTS BACKGROUND FLOATING IMAGES
-//  Premium non-stretch animated background
-// ─────────────────────────────────────────────────────────────
-(function () {
-
-  const canvas = document.getElementById('productsBgCanvas');
-  const ctx = canvas.getContext('2d');
-
-  let particles = [];
-  let loadedImages = [];
-  let running = false;
-  let time = 0;
-
-  // ─────────────────────────────────────────
-  // Resize canvas
-  // ─────────────────────────────────────────
-  function resizeCanvas() {
-    const outer = document.querySelector('.products-outer');
-
-    canvas.width =
-      outer.offsetWidth * (window.devicePixelRatio || 1);
-
-    canvas.height =
-      outer.offsetHeight * (window.devicePixelRatio || 1);
-
-    canvas.style.width = outer.offsetWidth + 'px';
-    canvas.style.height = outer.offsetHeight + 'px';
-  }
-
-  resizeCanvas();
-
-  window.addEventListener('resize', () => {
-    resizeCanvas();
-    createParticles();
-  });
-
-  // ─────────────────────────────────────────
-  // Load visible product images
-  // ─────────────────────────────────────────
-  window.updateProductsBg = function () {
-
-    const visibleProducts =
-      activeBrand === 'All'
-        ? products
-        : products.filter(
-            p => p.brand === activeBrand
-          );
-
-    const urls = [];
-
-    visibleProducts.forEach(product => {
-
-      const imgs =
-        product.images?.length
-          ? product.images
-          : product.imageUrl
-            ? [product.imageUrl]
-            : [];
-
-      imgs.forEach(url => {
-        if (url && !urls.includes(url)) {
-          urls.push(url);
-        }
-      });
-
-    });
-
-    if (!urls.length) {
-      particles = [];
-      return;
-    }
-
-    loadedImages = [];
-
-    let remaining = urls.length;
-
-    urls.forEach(url => {
-
-      const img = new Image();
-
-      img.crossOrigin = 'anonymous';
-
-      img.onload = () => {
-
-        loadedImages.push(img);
-
-        remaining--;
-
-        if (remaining <= 0) {
-          createParticles();
-        }
-
-      };
-
-      img.onerror = () => {
-
-        remaining--;
-
-        if (remaining <= 0) {
-          createParticles();
-        }
-
-      };
-
-      img.src = url;
-
-    });
-
-    if (!running) {
-      startAnimation();
-    }
-
-  };
-
-  // ─────────────────────────────────────────
-  // Create floating particles
-  // ─────────────────────────────────────────
-  function createParticles() {
-
-    if (!loadedImages.length) return;
-
-    const outer = document.querySelector('.products-outer');
-
-    const width = outer.offsetWidth;
-    const height = outer.offsetHeight;
-
-    const count =
-      Math.min(
-        40,
-        Math.max(15, loadedImages.length * 4)
-      );
-
-    particles = [];
-
-    for (let i = 0; i < count; i++) {
-
-      const img =
-        loadedImages[
-          Math.floor(Math.random() * loadedImages.length)
-        ];
-
-      particles.push({
-        img,
-
-        x: Math.random() * width,
-        y: Math.random() * height,
-
-        vx: (Math.random() - 0.5) * 0.25,
-        vy: (Math.random() - 0.5) * 0.18,
-
-        size: 140 + Math.random() * 180,
-
-        alpha: 0.08 + Math.random() * 0.14,
-
-        rotation: Math.random() * Math.PI * 2,
-
-        rotationSpeed:
-          (Math.random() - 0.5) * 0.0015,
-
-        scale: 0.9 + Math.random() * 0.35
-
-      });
-
-    }
-
-  }
-
-  // ─────────────────────────────────────────
-  // Animation loop
-  // ─────────────────────────────────────────
-  function startAnimation() {
-
-    running = true;
-
-    function animate() {
-
-      draw();
-
-      time += 0.01;
-
-      requestAnimationFrame(animate);
-
-    }
-
-    animate();
-
-  }
-
-  // ─────────────────────────────────────────
-  // Draw background
-  // ─────────────────────────────────────────
-  function draw() {
-
-    const dpr = window.devicePixelRatio || 1;
-
-    const outer = document.querySelector('.products-outer');
-
-    const width = outer.offsetWidth;
-    const height = outer.offsetHeight;
-
-    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-
-    ctx.clearRect(0, 0, width, height);
-
-    if (!particles.length) return;
-
-    particles.forEach((p, index) => {
-
-      // Smooth drifting motion
-      p.x += p.vx +
-        Math.sin(time + index) * 0.05;
-
-      p.y += p.vy +
-        Math.cos(time * 0.8 + index) * 0.04;
-
-      p.rotation += p.rotationSpeed;
-
-      // Wrap around edges
-      const pad = p.size;
-
-      if (p.x < -pad) p.x = width + pad;
-      if (p.x > width + pad) p.x = -pad;
-
-      if (p.y < -pad) p.y = height + pad;
-      if (p.y > height + pad) p.y = -pad;
-
-      // ─────────────────────
-      // Draw image correctly
-      // ─────────────────────
-      ctx.save();
-
-      ctx.globalAlpha = p.alpha;
-
-      ctx.translate(p.x, p.y);
-
-      ctx.rotate(p.rotation);
-
-      ctx.scale(p.scale, p.scale);
-
-      // Softer premium effect
-      ctx.filter =
-        'blur(0.5px) saturate(1.08) brightness(1.02)';
-
-      const maxSize = p.size;
-
-      const aspect =
-        p.img.width / p.img.height;
-
-      let drawWidth;
-      let drawHeight;
-
-      // Prevent stretching
-      if (aspect > 1) {
-
-        drawWidth = maxSize;
-        drawHeight = maxSize / aspect;
-
-      } else {
-
-        drawHeight = maxSize;
-        drawWidth = maxSize * aspect;
-
-      }
-
-      ctx.drawImage(
-        p.img,
-        -drawWidth / 2,
-        -drawHeight / 2,
-        drawWidth,
-        drawHeight
-      );
-
-      ctx.restore();
-
-    });
-
-  }
-
-})();
-</script>
+<!-- PRODUCTS SECTION -->
+<section class="products-section">
+
+  <div class="products-grid">
+
+    <!-- PRODUCT CARD -->
+    <div class="product-card">
+      <img src="IMAGE_URL" alt="Product">
+      <h3>Product Name</h3>
+      <p>$19.99</p>
+      <button>Add to Cart</button>
+    </div>
+
+    <!-- PRODUCT CARD -->
+    <div class="product-card">
+      <img src="IMAGE_URL" alt="Product">
+      <h3>Product Name</h3>
+      <p>$24.99</p>
+      <button>Add to Cart</button>
+    </div>
+
+    <!-- PRODUCT CARD -->
+    <div class="product-card">
+      <img src="IMAGE_URL" alt="Product">
+      <h3>Product Name</h3>
+      <p>$14.99</p>
+      <button>Add to Cart</button>
+    </div>
+
+  </div>
+
+</section>
+
+<style>
+.products-section{
+  padding: 40px 20px;
+}
+
+.products-grid{
+  display: grid;
+  grid-template-columns: repeat(auto-fit,minmax(220px,1fr));
+  gap: 24px;
+}
+
+.product-card{
+  background: #fff;
+  border-radius: 16px;
+  padding: 16px;
+  box-shadow: 0 4px 14px rgba(0,0,0,0.08);
+  text-align: center;
+}
+
+.product-card img{
+  width: 100%;
+  height: 220px;
+  object-fit: contain;
+  margin-bottom: 12px;
+}
+
+.product-card h3{
+  margin: 10px 0 6px;
+  font-size: 18px;
+}
+
+.product-card p{
+  font-size: 16px;
+  font-weight: 600;
+  margin-bottom: 14px;
+}
+
+.product-card button{
+  border: none;
+  padding: 10px 18px;
+  border-radius: 10px;
+  cursor: pointer;
+  font-size: 14px;
+}
+</style>
 // ── HERO CANVAS ANIMATION ──
 (function() {
   const canvas = document.getElementById('heroCanvas');
