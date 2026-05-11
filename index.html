@@ -38,14 +38,16 @@
 
   /* PRODUCTS SECTION */
   .products-section { padding: 2.5rem 2rem 4rem; max-width: 1200px; margin: 0 auto; position: relative; }
-  .products-bg-wrap { position: absolute; inset: 0; z-index: 0; pointer-events: none; overflow: hidden; border-radius: var(--radius); }
+  .products-bg-wrap { position: absolute; inset: 0; z-index: 0; pointer-events: none; overflow: hidden; }
   #productsBgCanvas { width: 100%; height: 100%; display: block; }
   .products-section > * { position: relative; z-index: 1; }
-  .section-header { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 1.5rem; background: transparent; }
+
+  /* Section header — solid */
+  .section-header { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 1.5rem; background: var(--bg); padding: 0.25rem 0; }
   .section-header h2 { font-family: 'Space Grotesk', sans-serif; font-size: 1.5rem; font-weight: 600; letter-spacing: -0.02em; }
   .section-header p { color: var(--muted); font-size: 0.875rem; }
 
-  /* ── FILTER BAR ── */
+  /* ── FILTER BAR — solid ── */
   .filter-bar { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; margin-bottom: 1.75rem; padding: 1rem 1.25rem; background: #ffffff; border: 1px solid var(--border); border-radius: var(--radius); }
   .filter-label { font-size: 0.78rem; font-weight: 600; color: var(--muted); letter-spacing: 0.06em; text-transform: uppercase; white-space: nowrap; }
   .filter-divider { width: 1px; height: 20px; background: var(--border); }
@@ -55,9 +57,9 @@
   .brand-chip.active { background: var(--text); color: #fff; border-color: var(--text); }
   .filter-count { margin-left: auto; font-size: 0.8rem; color: var(--muted); white-space: nowrap; }
 
-  /* PRODUCT GRID */
-  .product-grid-wrap { position: relative; border-radius: var(--radius); overflow: hidden; padding: 1.5rem; background: transparent; margin: 0 -1.5rem; }
-  .product-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 1.5rem; position: relative; z-index: 1; }
+  /* PRODUCT GRID — transparent, animation shows through */
+  .product-grid-wrap { position: relative; background: transparent; }
+  .product-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 1.5rem; }
 
   /* SKELETON */
   .skeleton-card { background: var(--surface); border-radius: var(--radius); border: 1px solid var(--border); overflow: hidden; }
@@ -241,6 +243,10 @@
 </section>
 
 <section class="products-section">
+
+  <!-- Canvas covers the whole section -->
+  <div class="products-bg-wrap"><canvas id="productsBgCanvas"></canvas></div>
+
   <div class="section-header">
     <h2>Our Products</h2>
     <p id="productCount">Loading products…</p>
@@ -255,7 +261,6 @@
   </div>
 
   <div class="product-grid-wrap">
-    <div class="products-bg-wrap"><canvas id="productsBgCanvas"></canvas></div>
     <div class="product-grid" id="productGrid">
       <div class="skeleton-card"><div class="skeleton sk-img"></div><div class="sk-body"><div class="skeleton sk-line med"></div><div class="skeleton sk-line short"></div><div class="skeleton sk-price"></div></div></div>
       <div class="skeleton-card"><div class="skeleton sk-img"></div><div class="sk-body"><div class="skeleton sk-line med"></div><div class="skeleton sk-line short"></div><div class="skeleton sk-price"></div></div></div>
@@ -802,9 +807,9 @@ function showToast(msg) {
   let bgT = 0;
 
   function resize() {
-    const wrap = document.querySelector('.product-grid-wrap') || canvas.parentElement;
-    canvas.width = wrap.offsetWidth * (devicePixelRatio || 1);
-    canvas.height = wrap.offsetHeight * (devicePixelRatio || 1);
+    const section = document.querySelector('.products-section') || canvas.parentElement;
+    canvas.width = section.offsetWidth * (devicePixelRatio || 1);
+    canvas.height = section.offsetHeight * (devicePixelRatio || 1);
   }
   resize();
   window.addEventListener('resize', () => { resize(); spawnParticles(); });
@@ -845,8 +850,8 @@ function showToast(msg) {
 
   function spawnParticles() {
     if (!loadedImgs.length) return;
-    const wrap = document.querySelector('.product-grid-wrap') || canvas.parentElement;
-    const w = wrap.offsetWidth, h = wrap.offsetHeight;
+    const section = document.querySelector('.products-section') || canvas.parentElement;
+    const w = section.offsetWidth, h = section.offsetHeight;
     const count = Math.min(60, Math.max(20, loadedImgs.length * 6));
     bgParticles = Array.from({ length: count }, (_, i) => {
       const img = loadedImgs[i % loadedImgs.length];
@@ -884,8 +889,8 @@ function showToast(msg) {
 
   function drawBg() {
     const dpr = devicePixelRatio || 1;
-    const wrap = document.querySelector('.product-grid-wrap') || canvas.parentElement;
-    const w = wrap.offsetWidth, h = wrap.offsetHeight;
+    const section = document.querySelector('.products-section') || canvas.parentElement;
+    const w = section.offsetWidth, h = section.offsetHeight;
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     ctx.clearRect(0, 0, w, h);
 
