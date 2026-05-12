@@ -756,8 +756,13 @@ function initPayPal() {
         _pendingOrder = null;
         showSuccess();
       } catch(err) {
-        console.error('PayPal capture error:', err);
-        container.innerHTML = '<p style="color:#991b1b;font-size:0.85rem;text-align:center">Payment capture failed. Please contact us with your PayPal receipt.</p>';
+        console.error('PayPal capture error FULL:', JSON.stringify(err), err.message, err.details);
+        // Show the actual error details on screen for debugging
+        container.innerHTML = `<p style="color:#991b1b;font-size:0.8rem;padding:10px;background:#fff5f5;border-radius:8px;border:1px solid #fca5a5">
+          <strong>Capture failed:</strong> ${err.message || 'Unknown error'}<br>
+          ${err.details ? err.details.map(d => d.description).join('<br>') : ''}
+          <br><br>Please contact us with your PayPal receipt or try Cash App.
+        </p>`;
       }
     },
     onCancel: function() { _pendingOrder = null; showToast('Payment cancelled.'); initPayPal(); },
